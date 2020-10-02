@@ -134,8 +134,10 @@ program tracking
   call twiss_propagate_all (lat)
   call closed_orbit_calc (lat, orb0, i_dim) !!!!!!!!!!!!! changed !!!!!!!!!!!!!!!!!!
   call cpu_time(start)
-  
-  slave => pointer_to_lord(lat%ele(64), 2)
+  do i = 1, n_ele
+    ele => lat%ele(i)
+    write(*,*) key_name(ele%key) 
+  enddo
   do i = 1,N_seeds ! Here you define how many random sets you want to take
 ! "test" defined below will be part of each file name, so you can easily get the seeds. Be aware: "test" is not directly the seed. See below how they are calculated. If you really need the misalignments, better write them to a file each time.
      write(*,*) i
