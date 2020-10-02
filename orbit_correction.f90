@@ -52,7 +52,7 @@ contains
         real ( kind = 8 ), allocatable, dimension ( : ) :: disp_Corr
 
 
-        type (ele_struct), pointer :: ele
+        type (ele_struct), pointer :: ele,slave
 
         !****************************************************************************
         count1 = 0
