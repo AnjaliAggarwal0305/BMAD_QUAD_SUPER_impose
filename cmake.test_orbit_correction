@@ -1,0 +1,24 @@
+set(EXENAME test_orbit_correction)
+set (SRC_FILES 
+    with_orbit_correction.f90
+    orbit_correction.f90
+    normal.f90
+    get_pseudo_inverse.f90
+)
+
+set (LINK_LIBS
+  bmad
+  xsif
+  xrlf03
+  xrl
+  sim_utils
+  recipes_f-90_LEPP
+  pgplot
+  forest
+  lapack95
+  lapack
+  blas
+  fgsl
+  gsl
+  gslcblas
+)
