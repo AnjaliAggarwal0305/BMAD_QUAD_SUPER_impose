@@ -18,7 +18,7 @@ program tracking
   real ( kind = 8 ), allocatable, dimension ( : ) :: deltaOrbit, deltaOrbit_corrected
   real ( kind = 8 ), allocatable, dimension ( : ) :: kicks
   real(rp) :: s_body
-  type (ele_struct), pointer :: ele, slave
+  type (ele_struct), pointer :: ele
   real(rp) :: loc_vec(3)
 ! Beam
   type (beam_init_struct) beam_init
@@ -31,13 +31,13 @@ program tracking
 ! ------------------- changes are allowed only here ------------------------  
 ! Parameters
 ! general menu for misalignments, kickers, orbit correction and EDM
-  logical, parameter :: orbit_correction = .false. ! false -> NO correction (N,C)
+  logical, parameter :: orbit_correction = .true. ! false -> NO correction (N,C)
   logical, parameter :: kickers = .false.  ! false -> standard kicker (S,D) 
   logical, parameter :: edm = .true. ! false -> EDM=0 (N,E)
-  logical, parameter :: qmisalignments = .false. ! false -> NO quad misalignments (N,Q)
-  logical, parameter :: dmisalignments = .false. ! false -> NO dipole misalignments (N,D)
+  logical, parameter :: qmisalignments = .true. ! false -> NO quad misalignments (N,Q)
+  logical, parameter :: dmisalignments = .true. ! false -> NO dipole misalignments (N,D)
   real,    parameter :: edmvalue=1. ! EDM value
-  integer, parameter :: N_turn = 1000 ! number of turns
+  integer, parameter :: N_turn = 100! number of turns
   integer, parameter :: N_seeds = 1 ! number of seeds
 ! ------------------- end of allowed changes -------------------------------  
   
@@ -79,7 +79,6 @@ program tracking
   real ( kind = 8 ) r_tilt_y
   real ( kind = 8 ) r_tilt_z
   real(rp) ::  rev_freq_ref
-  integer ( kind = 4 ) n_ele
   integer ( kind = 8 ) seed_xq
   integer ( kind = 8 ) seed_yq
   integer ( kind = 8 ) seed_zq
@@ -120,24 +119,19 @@ program tracking
   seed_tilt_yd=2981375
   seed_tilt_zd=856418
   loc_steer = 0
-  
+
 ! Parsing and initialization
   bmad_com%spin_tracking_on = .true.
   bmad_com%auto_bookkeeper = .false.
   call bmad_parser ("/home/anjali/bmad/Anjali/COSY_steerer_simulations/lattice/prof_lattice/lattice_after_quad_dipole_overlap/COSY_default_ideal.bmad", lat)   ! Read in a lattice.
   call set_on_off (rfcavity$, lat, on$) !!!!!!!!!!!!! changed !!!!!!!!!!!!!!!!!!
   ! Set EDM value
-  n_ele = lat%n_ele_max
   bmad_com%electric_dipole_moment=edmvalue*bmad_com%electric_dipole_moment
   if( .not. edm ) bmad_com%electric_dipole_moment=0.
   call twiss_at_start (lat)
   call twiss_propagate_all (lat)
   call closed_orbit_calc (lat, orb0, i_dim) !!!!!!!!!!!!! changed !!!!!!!!!!!!!!!!!!
   call cpu_time(start)
-  do i = 1, n_ele
-    ele => lat%ele(i)
-    write(*,*) key_name(ele%key) 
-  enddo
   do i = 1,N_seeds ! Here you define how many random sets you want to take
 ! "test" defined below will be part of each file name, so you can easily get the seeds. Be aware: "test" is not directly the seed. See below how they are calculated. If you really need the misalignments, better write them to a file each time.
      write(*,*) i

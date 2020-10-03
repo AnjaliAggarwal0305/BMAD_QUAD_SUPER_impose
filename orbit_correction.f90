@@ -79,6 +79,8 @@ contains
 
         do i = 1, n_ele
             ele => lat%ele(i)
+            if(ele%name=='END') EXIT
+                
             if (key_name(ele%key) .EQ. 'Monitor' .and. index(ele%name,"H",.false.) > 1) then
 
                 mx = mx+1  
@@ -86,15 +88,18 @@ contains
             else if (key_name(ele%key) .EQ. 'Monitor' .and. index(ele%name,"V",.false.) > 1) then
 
                 my = my+1 
-
-            else if (index(key_name(ele%key),"kicker",.false.) == 2 .and. index(key_name(ele%key),"H",.false.) == 1 .and. index(ele%name, "TOROID", .false.) /= 1 .and. index(ele%name, "MBU", .false.) /= 1 ) then
-
+            
+            else if(key_name(ele%key)=='EM_Field') then
+               slave => pointer_to_lord(lat%ele(i), 2)
+               if(index(slave%name,'QTB',.false.) ==1.or.index(slave%name,'QUB',.false.) ==1) then
+                
                 nx = nx+1
-
-            else if (index(key_name(ele%key),"kicker",.false.) == 2 .and. index(key_name(ele%key),"V",.false.) == 1 ) then
-
+               
+               else if (index(slave%name,'QTV',.false.) ==1.or. index(slave%name,'QUV',.false.) ==1) then
+                 
                 ny = ny+1
-
+               end if
+               
             end if
         enddo
 
@@ -103,7 +108,7 @@ contains
         else if (loc_steer > nx .and. loc_steer /= 0) then
             ny = ny-1
         end if
-
+        Print *, nx,ny,mx,my
         if (allocated(orm)) then
             deallocate(orm)
         end if
@@ -117,6 +122,8 @@ contains
 
         do i = 1, n_ele
             ele => lat%ele(i)
+            if(ele%name=='END') EXIT
+            
             if (key_name(ele%key) .EQ. 'Monitor' .and. index(ele%name,"H",.false.) > 1) then
 
                 count1 = count1 + 1
@@ -131,30 +138,33 @@ contains
                 phi_BPM(count2+mx) = ele%b%phi
                 disp_BPM(count2+mx) = 0.        
 
-            else if (index(key_name(ele%key),"kicker",.false.) == 2 .and. index(key_name(ele%key),"H",.false.) == 1 .and. index(ele%name, "TOROID", .false.) /= 1 .and. index(ele%name, "MBU", .false.) /= 1) then
+            else if(key_name(ele%key)=='EM_Field') then
+                slave => pointer_to_lord(lat%ele(i), 2)
+                if(index(slave%name,'QTB',.false.) ==1.or.index(slave%name,'QUB',.false.) ==1) then
 
-                count3 = count3 + 1
-                if (count3 .EQ. loc_steer .and. loc_steer /= 0) then
-                    count3 = count3 - 1
-                    loc_steer = 0
-                else
-                    beta_Corr(count3) = ele%a%beta
-                    phi_Corr(count3) = ele%a%phi
-                    disp_Corr(count3) = ele%a%eta
+                    count3 = count3 + 1
+                    if (count3 .EQ. loc_steer .and. loc_steer /= 0) then
+                        count3 = count3 - 1
+                        loc_steer = 0
+                    else
+                        beta_Corr(count3) = ele%a%beta
+                        phi_Corr(count3) = ele%a%phi
+                        disp_Corr(count3) = ele%a%eta
 
+                    end if
+
+                else if (index(slave%name,'QTV',.false.) ==1.or. index(slave%name,'QUV',.false.) ==1) then
+
+                    count4 = count4 + 1
+                    if (count4+nx .EQ. loc_steer .and. loc_steer /= 0) then
+                        count4 = count4 - 1
+                        loc_steer = 0
+                    else
+                        beta_Corr(count4+nx) = ele%b%beta
+                        phi_Corr(count4+nx) = ele%b%phi
+                        disp_Corr(count4+nx) = 0.   
+                    end if
                 end if
-
-            else if (index(key_name(ele%key),"kicker",.false.) == 2 .and. index(key_name(ele%key),"V",.false.) == 1 ) then
-
-                count4 = count4 + 1
-                if (count4+nx .EQ. loc_steer .and. loc_steer /= 0) then
-                    count4 = count4 - 1
-                    loc_steer = 0
-                else
-                    beta_Corr(count4+nx) = ele%b%beta
-                    phi_Corr(count4+nx) = ele%b%phi
-                    disp_Corr(count4+nx) = 0.   
-                end if     
 
             end if
 
@@ -315,38 +325,43 @@ contains
         integer ( kind = 4 ) n_ele
         integer ( kind = 4 ) i, count1, count2, loc_steer
         real ( kind = 8 ) a
-        type (ele_struct), pointer :: ele
-
+        type (ele_struct), pointer :: ele,slave
+        real(rp) ::ref_charge, f_p0c
         n_ele = lat%n_ele_max
         count1 = 0
         count2 = 0
         a = 0.01
+        ref_charge =charge_of(lat%param%particle)
 
         do i = 1, n_ele
             ele => lat%ele(i)
-    
-            if (index(key_name(ele%key),"kicker",.false.) == 2 .and. index(key_name(ele%key),"H",.false.) == 1 .and. index(ele%name, "TOROID", .false.) /= 1 .and. index(ele%name, "MBU", .false.) /= 1 ) then
-
-                count1 = count1 + 1
-                if (count1 .EQ. loc_steer .and. loc_steer /= 0) then
-                    count1 = count1 - 1
-                    loc_steer = 0
-                else if (abs(kicks(count1)) >= 0.000000001) then
-                    ele%value(kick$) = ele%value(kick$)+kicks(count1)
-                    call set_flags_for_changed_attribute (ele, ele%value(kick$))
-                end if
             
-            else if (index(key_name(ele%key),"kicker",.false.) == 2 .and. index(key_name(ele%key),"V",.false.) == 1 ) then
+            f_p0c = ele%value(p0c$) / (c_light * ref_charge)
+            if(ele%name=='END') EXIT
+            if(key_name(ele%key)=='EM_Field') then
+                slave => pointer_to_lord(lat%ele(i), 2)
+                if(index(slave%name,'QTB',.false.) ==1.or.index(slave%name,'QUB',.false.) ==1) then
 
-                count2 = count2 + 1
-                if (count2+nx .EQ. loc_steer .and. loc_steer /= 0) then
-                    count2 = count2 - 1
-                    loc_steer = 0
-                else if (abs(kicks(count2+nx)) >= 0.000000001) then
-                    ele%value(kick$) = ele%value(kick$)+kicks(count2+nx)
-                    call set_flags_for_changed_attribute (ele, ele%value(kick$))
+                    count1 = count1 + 1
+                    if (count1 .EQ. loc_steer .and. loc_steer /= 0) then
+                        count1 = count1 - 1
+                        loc_steer = 0
+                    else if (abs(kicks(count1)) >= 0.000000001) then
+                        slave%cartesian_map(1)%ptr%term(:)%coef =slave%cartesian_map(1)%ptr%term(:)%coef -kicks(count1)* f_p0c/slave%value(l$)
+                        !call set_flags_for_changed_attribute (ele, ele%value(kick$))
+                    end if
+            
+                else if (index(slave%name,'QTV',.false.) ==1.or. index(slave%name,'QUV',.false.) ==1) then
+
+                    count2 = count2 + 1
+                    if (count2+nx .EQ. loc_steer .and. loc_steer /= 0) then
+                        count2 = count2 - 1
+                        loc_steer = 0
+                    else if (abs(kicks(count2+nx)) >= 0.000000001) then
+                        slave%cartesian_map(1)%ptr%term(:)%coef =slave%cartesian_map(1)%ptr%term(:)%coef +kicks(count2+nx)* f_p0c/slave%value(l$)
+                        !call set_flags_for_changed_attribute (ele, ele%value(kick$))
+                    end if
                 end if
-        
             end if
 
         enddo
